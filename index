@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Industrial Electricity (Bilingual Learning)</title>
+<style>
+  :root{
+    --bg:#ffffff;
+    --panel:#ffffff;
+    --muted:#555555;     /* Spanish text */
+    --ink:#000000;       /* English text */
+    --accent:#0077cc;
+    --success:#16a34a;
+    --danger:#cc0000;
+    --soft-alert:#fff7d6;
+    --soft-alert-border:#f5e09b;
+    --radius:10px;
+    --shadow:0 8px 28px rgba(2,6,23,0.06);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;color:var(--ink);
+    background:var(--bg);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  }
+
+  /* SITE WRAPPER (will be hidden when a game starts) */
+  #site{max-width:1100px;margin:22px auto;padding:18px}
+
+  header{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:8px}
+  h1{margin:0;font-size:26px;font-weight:800;color:var(--ink)}
+  .subtitle{margin:0;color:var(--muted)}
+
+  .card{background:var(--panel);padding:16px;border-radius:var(--radius);box-shadow:var(--shadow);margin-top:16px;border:1px solid #efefef}
+  .text-en{color:var(--ink);display:block}
+  .text-es{color:var(--muted);display:block;margin-top:8px}
+
+  .guide{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:12px}
+  .tool-card{display:flex;gap:12px;align-items:flex-start;background:#fafafa;padding:12px;border-radius:10px;border:1px solid #f0f0f0}
+  .tool-photo{width:120px;height:120px;flex:0 0 120px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid #eee;overflow:hidden}
+  .tool-photo img{width:100%;height:100%;object-fit:contain}
+  .tool-title{font-weight:800;margin:0;color:var(--ink)}
+  .tool-desc{font-size:14px;color:#222;line-height:1.45;margin:6px 0}
+
+  .actions{display:flex;gap:12px;justify-content:center;margin:18px 0;flex-wrap:wrap}
+  .btn{background:var(--accent);color:#fff;padding:12px 18px;border-radius:10px;border:0;cursor:pointer;font-weight:800}
+  .btn.secondary{background:#22c55e}
+  .btn.ghost{background:transparent;border:1px solid #ddd;color:var(--ink)}
+  .btn:hover{filter:brightness(.95)}
+
+  /* Panels (games) are outside #site and shown when playing */
+  .panel{max-width:1100px;margin:22px auto;padding:18px;border-radius:10px;background:#fff;border:1px solid #efefef;box-shadow:var(--shadow);display:none}
+  .top-controls{display:flex;justify-content:flex-end;margin-bottom:8px}
+  .top-controls .btn{padding:8px 12px;font-weight:700}
+
+  /* Match */
+  .match-board{position:relative;min-height:420px;padding:12px}
+  .cols{display:flex;gap:16px;align-items:flex-start}
+  .col{flex:1;display:flex;flex-direction:column;gap:10px;padding:8px}
+  .img-card,.name-card{
+    background:#fff;border-radius:10px;border:2px solid transparent;padding:10px;margin:4px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .14s;box-shadow:0 6px 18px rgba(2,6,23,0.04)
+  }
+  .img-card img{width:120px;height:96px;object-fit:contain;border-radius:8px;background:#fff}
+  .name-card{font-weight:800;padding:12px 16px;text-align:center}
+  .img-card:hover,.name-card:hover{transform:translateY(-4px);box-shadow:0 10px 24px rgba(2,6,23,0.06)}
+  .selected{outline:3px solid rgba(0,119,204,0.14)}
+  .paired{border-color:var(--success);opacity:.6;pointer-events:none}
+  .wrong{border-color:var(--danger);outline:3px solid rgba(204,0,0,0.08)}
+  canvas{position:absolute;left:0;top:0;pointer-events:none;z-index:2}
+
+  /* Quiz */
+  .quiz-area{display:flex;flex-direction:column;align-items:center;gap:12px}
+  .quiz-img{width:260px;height:180px;object-fit:contain;border-radius:8px;background:#fff;border:1px solid #efefef;padding:8px}
+  .options{display:flex;flex-direction:column;gap:10px;align-items:center}
+  .option-btn{background:#fff;border:2px solid #efefef;padding:10px 14px;border-radius:10px;cursor:pointer;min-width:320px;font-weight:800;color:var(--ink)}
+  .option-btn.correct{border-color:var(--success);background:#f0fef4}
+  .option-btn.wrong{border-color:var(--danger);background:#fff5f5}
+
+  /* modal for 3 wrongs (quiz only) */
+  .modal {
+    position:fixed; left:50%; top:18%;
+    transform:translateX(-50%);
+    background:var(--soft-alert);
+    border:1px solid var(--soft-alert-border);
+    padding:14px; border-radius:10px; box-shadow:0 10px 30px rgba(2,6,23,0.08);
+    z-index:3000; max-width:420px; width:90%; display:none; text-align:center;
+  }
+  .m-btn{padding:8px 12px;border-radius:8px;border:0;cursor:pointer;font-weight:700}
+  .m-btn.cont{background:var(--accent);color:#fff;margin-right:8px}
+  .m-btn.end{background:var(--danger);color:#fff}
+
+  /* results overlay */
+  .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);z-index:4000}
+  .result-card{width:min(720px,92%);padding:22px;border-radius:12px;text-align:center;background:var(--panel);box-shadow:var(--shadow);border:1px solid #eee}
+  .result-card.win{outline:4px solid var(--success)}
+  .result-card.ok{outline:4px solid #f59e0b}
+  .result-card.lose{outline:4px solid var(--danger)}
+  .result-actions{display:flex;gap:12px;justify-content:center;margin-top:16px}
+  .small-btn{padding:10px 14px;border-radius:10px;border:0;cursor:pointer;font-weight:800}
+  .small-btn.retry{background:var(--success);color:#fff}
+  .small-btn.close{background:var(--accent);color:#fff}
+
+  /* Media Queries (Diseño Responsivo) */
+  /* Adaptación para tablets y pantallas más pequeñas que 980px */
+  @media (max-width:980px){
+    .guide{grid-template-columns:1fr}
+    .quiz-img{width:200px;height:140px}
+    .option-btn{min-width:240px}
+    .img-card img{width:96px;height:80px}
+    /* SE ELIMINÓ la regla `flex-direction: column` para mantener la vista horizontal en el juego de emparejamiento. */
+    .top-controls{justify-content:center}
+    .match-board {min-height: 520px;}
+    .modal {top: 10%;}
+  }
+
+  /* Nueva Media Query: Optimización para teléfonos (ancho máximo de 600px) */
+  @media (max-width:600px) {
+    #site { padding: 12px; margin: 12px auto; }
+    h1 { font-size: 22px; }
+    .tool-card { flex-direction: column; align-items: center; text-align: center; }
+    .tool-photo { width: 100%; height: auto; }
+    .tool-body { margin-top: 10px; }
+    
+    .quiz-img { width: 180px; height: 120px; }
+    .option-btn { min-width: 100%; font-size: 14px; padding: 10px; }
+    .card { padding: 12px; }
+    .btn { padding: 10px 14px; }
+  }
+</style>
+</head>
+<body>
+
+  <div id="site">
+    <div class="wrap">
+      <header>
+        <h1>Industrial Electricity</h1>
+        <p class="subtitle">A bilingual learning resource created as part of an English project.</p>
+      </header>
+
+      <section class="card" id="intro-card">
+        <h2 style="margin:0 0 8px;color:var(--ink)">Introduction / Introducción</h2>
+        <p class="text-en">This project offers a detailed, practice-oriented overview of essential tools and personal protective equipment (PPE) used in industrial electricity. It provides apprentices with a bilingual resource that integrates English–Spanish technical terminology, strengthening both professional competencies and language skills. By combining theory with hands-on activities, the module emphasizes safe work practices, measurement accuracy, and the correct use of each tool. The page was developed by apprentices <strong>Johan Stiven Valderrama Alvarez</strong> and <strong>Willian Stiven Gamboa Vargas</strong>, from training group <strong>2894696</strong>, as part of their English learning project.</p>
+        <p class="text-es">Este proyecto presenta una visión detallada y orientada a la práctica de las principales herramientas y equipos de protección personal (EPP) empleados en la electricidad industrial. Ofrece a los aprendices un recurso bilingüe que integra la terminología técnica en inglés y español, fortaleciendo tanto las competencias profesionales como las comunicativas. Al articular el conocimiento teórico con actividades prácticas, el módulo resalta las buenas prácticas de seguridad, la precisión en las mediciones y el uso correcto de cada herramienta. La página fue elaborada por los aprendices <strong>Johan Stiven Valderrama Alvarez</strong> y <strong>Willian Stiven Gamboa Vargas</strong>, integrantes de la ficha <strong>2894696</strong>, como parte de su proyecto de inglés.</p>
+      </section>
+
+      <section class="card" id="guide-card">
+        <h3 style="margin-top:0;color:var(--ink)">Learning Guide — Tools & PPE</h3>
+        <div id="guideList" class="guide"></div>
+      </section>
+
+      <div class="card note">
+        <div class="text-en">Below you will find two buttons that open interactive games. Each one is designed to help you practice the names of electrical tools in English. Choose a game, test your knowledge and improve your technical vocabulary.</div>
+        <div class="text-es">A continuación encontrarás dos botones que abren juegos interactivos. Cada uno está diseñado para ayudarte a practicar los nombres de las herramientas eléctricas en inglés. Elige un juego, pon a prueba tu conocimiento y fortalece tu vocabulario técnico.</div>
+      </div>
+
+      <div class="actions">
+        <button id="btnMatch" class="btn">Game 1 — Matching</button>
+        <button id="btnQuiz" class="btn secondary">Game 2 — Quiz</button>
+      </div>
+    </div>
+  </div>
+
+  <section id="matchPanel" class="panel" aria-hidden="true">
+    <div class="top-controls">
+      <button class="btn ghost" onclick="finishGame()">Finish Game / Finalizar Juego</button>
+    </div>
+    <h3 style="margin-top:0;color:var(--ink)">Matching</h3>
+    <p class="text-en" style="margin-top:0">Match each image on the left with the correct English name on the right. You start with 100 points; each wrong match subtracts 20 points. If the score reaches 0, the game ends.</p>
+    <p class="text-es" style="margin-bottom:12px">Relaciona cada imagen (izquierda) con su nombre en inglés (derecha). Comienzas con 100 puntos; cada error resta 20 puntos. Si el puntaje llega a 0, el juego termina.</p>
+    <div class="score" id="matchScore" style="font-weight:800;margin-bottom:10px">Score: 100</div>
+    <div id="matchBoard" class="match-board">
+      <div class="cols">
+        <div id="imagesCol" class="col"></div>
+        <div id="namesCol" class="col"></div>
+      </div>
+      <canvas id="matchCanvas"></canvas>
+    </div>
+  </section>
+
+  <section id="quizPanel" class="panel" aria-hidden="true">
+    <div class="top-controls">
+      <button class="btn ghost" onclick="finishGame()">Finish Game / Finalizar Juego</button>
+    </div>
+    <h3 style="margin-top:0;color:var(--ink)">Quiz (Multiple choice)</h3>
+    <p class="text-en" style="margin-top:0">Answer 15 questions. Each question shows a tool image. Choose the best option (A–D). Correct answers advance to the next question automatically.</p>
+    <p class="text-es" style="margin-bottom:12px">Responde 15 preguntas. Cada pregunta muestra la imagen de una herramienta. Elige la mejor opción (A–D). Las respuestas correctas avanzan automáticamente a la siguiente pregunta.</p>
+    <div id="quizArea" class="quiz-area"></div>
+  </section>
+
+  <div id="threeErrorsModal" class="modal" role="dialog" aria-modal="true" aria-hidden="true">
+    <p style="margin:0 0 8px"><strong style="color:var(--ink)">You have made 3 mistakes in a row.</strong></p>
+    <p style="color:var(--muted);margin:0 0 12px">It may help to pause the game and review the tool gallery before continuing.</p>
+    <div>
+      <button class="m-btn cont" onclick="ignoreModal()">Ignore and continue / Ignorar y continuar</button>
+      <button class="m-btn end" onclick="finishFromModal()">Finish game / Finalizar juego</button>
+    </div>
+  </div>
+
+  <div id="overlay" class="overlay" style="display:none;align-items:center;justify-content:center">
+    <div id="resultCard" class="result-card">
+      <div id="resultTitle" style="font-size:20px;font-weight:800;color:var(--ink)"></div>
+      <div id="resultSub" style="margin-top:8px;color:var(--muted)"></div>
+      <div id="resultScore" style="margin-top:14px;font-size:18px;font-weight:800;color:var(--ink)"></div>
+      <div class="result-actions">
+        <button id="btnRetry" class="small-btn retry">Retry / Volver a jugar</button>
+        <button id="btnClose" class="small-btn close">Exit / Salir</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ================= DATASET (pipe wrench removed; includes cautin, tool belt, drill) */
+const DATA = [
+  {id:'multimetro', es:'Multímetro', en:'Multimeter', img:'https://th.bing.com/th/id/R.09477a7f9eb3a07a4c9b8473c6b1c062?rik=iMXLxGwKkE%2fjGQ&riu=http%3a%2f%2foksecurity.hn%2fwp-content%2fuploads%2f2023%2f05%2fUT139C-multimetro_.jpg&ehk=CiH3LFjJlLZnqzQQ9k9Z9aPAGUxOVqiQ6H9p0XKxLCc%3d&risl=&pid=ImgRaw&r=0',
+   descEN:'Measures voltage, current and resistance; essential for basic troubleshooting, verification and safety checks before energizing equipment.',
+   descES:'Mide tensión, corriente y resistencia; esencial para diagnósticos básicos, verificaciones y seguridad antes de energizar equipos.'},
+
+  {id:'pinza-amperimetrica', es:'Pinza amperimétrica', en:'Clamp meter', img:'https://media.adeo.com/media/2873585/media.png?width=3000&height=3000&format=jpg&quality=80&fit=bounds',
+   descEN:'Measures AC/DC current without opening the circuit by clamping around a conductor; safe and practical for live panels.',
+   descES:'Mide corriente CA/CC sin abrir el circuito, abrazando el conductor; seguro y práctico en tableros energizados.'},
+
+  {id:'destornillador', es:'Destornillador', en:'Screwdriver', img:'https://tse4.mm.bing.net/th/id/OIP.doT3xczt97xpDw9a0q_keAHaHa?cb=thfvnext&rs=1&pid=ImgDetMain&o=7&rm=3',
+   descEN:'General tool to tighten or loosen screws on terminals, enclosures and fixtures during assembly and maintenance.',
+   descES:'Herramienta general para ajustar o aflojar tornillos en terminales, gabinetes y accesorios durante montaje y mantenimiento.'},
+
+  {id:'destornillador-dielectrico', es:'Destornillador dieléctrico', en:'Insulated screwdriver', img:'https://i.blogs.es/5d74a1/bahco/original.jpg',
+   descEN:'Insulated (VDE-rated) to reduce shock risk when working near energized parts and control panels.',
+   descES:'Aislado (certificación VDE) para reducir el riesgo de descarga al trabajar cerca de partes energizadas y tableros de control.'},
+
+  {id:'llaves-allen', es:'Juego de llaves Allen', en:'Hex key set', img:'https://th.bing.com/th/id/R.24398f489e3b28f1eb8c17cf33734491?rik=ReAicyiMzgjTtg&pid=ImgRaw&r=0',
+   descEN:'Tightens hex-socket screws in mechanical assemblies, motor mounts and electrical enclosures.',
+   descES:'Ajusta tornillos con cavidad hexagonal en conjuntos mecánicos, soportes de motor y gabinetes eléctricos.'},
+
+  {id:'identificador-circuitos', es:'Identificador de circuitos', en:'Circuit identifier', img:'https://tse4.mm.bing.net/th/id/OIP.n1uv3FIwjjqhRJnoSAw59gHaHa?cb=thfvnext&rs=1&pid=ImgDetMain&o=7&rm=3',
+   descEN:'Helps locate circuits and their breakers for labeling and safe maintenance procedures.',
+   descES:'Permite localizar circuitos y sus disyuntores para rotulado y mantenimiento seguro.'},
+
+  {id:'cinta-metrica', es:'Cinta métrica', en:'Measuring tape', img:'https://www.ingegeek.site/wp-content/uploads/2022/12/71JCozNE1zL._SL1500_-1024x1024.jpg',
+   descEN:'Measures runs, clearances and mounting distances when laying out equipment and raceways.',
+   descES:'Mide recorridos, holguras y distancias de montaje al trazar equipos y canalizaciones.'},
+
+  {id:'alicate', es:'Alicate', en:'Combination pliers', img:'https://img.lojadomecanico.com.br/IMAGENS/2/468/111277/Alicate-Universal-Polido-Premium-de-8-Po-thompson-141.JPG',
+   descEN:'Cuts and grips wires, terminals and small parts; common for general electrical work.',
+   descES:'Corta y sujeta conductores, terminales y piezas pequeñas; común en trabajos eléctricos generales.'},
+
+  {id:'punta-larga', es:'Pinzas de punta larga', en:'Long-nose pliers', img:'https://cdn.shopify.com/s/files/1/0013/5033/6614/products/pinzadepuntalarga_2_1200x1200.jpg?v=1610043670',
+   descEN:'Reaches tight spaces inside panels to bend, hold and route small wires with precision.',
+   descES:'Alcanza espacios reducidos en tableros para doblar, sujetar y guiar cables finos con precisión.'},
+
+  {id:'pelacables', es:'Pelacables', en:'Wire stripper', img:'https://i5.walmartimages.com.mx/mg/gm/3pp/asr/e650527c-a1fa-4783-9fef-07b1181d5d06.59f04a7fddf0802c0cc0a017777221bf.jpeg?odnHeight=2000&odnWidth=2000&odnBg=ffffff',
+   descEN:'Removes insulation cleanly by gauge to prepare conductors for reliable terminations.',
+   descES:'Retira el aislamiento por calibre de forma limpia para preparar conductores con terminaciones confiables.'},
+
+  {id:'crimpadora', es:'Crimpadora de terminales', en:'Crimping tool', img:'https://www.pandaancha.mx/plds/articulos/froala/crimpadora-que-es-para-que-sirve-que-tipos-hay-10-1200x470-529964423.png',
+   descEN:'Compresses lugs and ferrules onto conductors to create robust, low-resistance connections.',
+   descES:'Comprime terminales y punteras sobre los conductores para conexiones robustas y de baja resistencia.'},
+
+  {id:'buscapolos', es:'Comprobador de voltaje (buscapolos)', en:'Voltage tester', img:'https://d26lpennugtm8s.cloudfront.net/stores/948/571/products/buscapolo-tradicional-sica-11-71bd6bc825a8ec0a0215570877455954-1024-1024.jpg',
+   descEN:'Quickly checks the presence of voltage to avoid accidental contact with live circuits.',
+   descES:'Verifica rápidamente la presencia de tensión para evitar contacto accidental con circuitos energizados.'},
+
+  {id:'pertiga', es:'Pértiga (barra aislante)', en:'Insulating stick', img:'https://tse2.mm.bing.net/th/id/OIP.MhW1tGngAFPs3D6JkjjvkQHaHa?cb=thfvnext&rs=1&pid=ImgDetMain&o=7&rm=3',
+   descEN:'Insulated pole used to operate equipment from a safe distance when parts are energized.',
+   descES:'Barra aislada usada para operar equipos a distancia de forma segura cuando hay partes energizadas.'},
+
+  {id:'ausencia-tension', es:'Medidor de ausencia de tensión', en:'Voltage absence tester', img:'https://www.testrix.com.au/assets/full/2131.12.jpg?20240410101022',
+   descEN:'Confirms that circuits are de-energized before maintenance and lockout/tagout.',
+   descES:'Confirma que los circuitos estén desenergizados antes del mantenimiento y bloqueo/etiquetado.'},
+
+  {id:'mego', es:'Megóhmetro (medidor de aislamiento)', en:'Insulation tester (Megger)', img:'https://tse1.mm.bing.net/th/id/OIP.7HGyZ8OEoI2bkdCAxg_SFAHaHa?cb=thfvnext&rs=1&pid=ImgDetMain&o=7&rm=3',
+   descEN:'Applies test voltage to evaluate insulation resistance in cables, motors and switchgear.',
+   descES:'Aplica tensión de prueba para evaluar la resistencia de aislamiento en cables, motores y celdas.'},
+
+  {id:'telurimetro', es:'Telurómetro (medidor de puesta a tierra)', en:'Earth resistance tester', img:'https://www.suministroselectricos.es/64027-large_default/medidor-0303resistencia-tierra-telurometroht-instrumentsgeo416.jpg',
+   descEN:'Measures grounding resistance to ensure safe fault paths and proper protection operation.',
+   descES:'Mide la resistencia de tierra para garantizar rutas de falla seguras y el correcto funcionamiento de protecciones.'},
+
+  {id:'analizador-redes', es:'Analizador de redes eléctricas', en:'Power quality analyzer', img:'https://sucomputo.com/wp-content/uploads/2021/08/Fluke_435.jpg',
+   descEN:'Evaluates power quality (harmonics, transients, imbalance) to diagnose system issues.',
+   descES:'Evalúa la calidad de energía (armónicos, transitorios, desequilibrios) para diagnosticar problemas del sistema.'},
+
+  {id:'rotacion-fases', es:'Detector de rotación de fases', en:'Phase rotation tester', img:'https://tse4.mm.bing.net/th/id/OIP.tsJE8tMXm-qwLy6Liq7CVgHaHa?cb=thfvnext&rs=1&pid=ImgDetMain&o=7&rm=3',
+   descEN:'Identifies phase sequence to ensure correct motor rotation during commissioning.',
+   descES:'Identifica la secuencia de fases para asegurar el giro correcto de motores durante la puesta en marcha.'},
+
+  {id:'termografica', es:'Cámara termográfica', en:'Thermal camera', img:'https://dam-assets.fluke.com/s3fs-public/F_ti400_15a_ko_1500x1000.jpg',
+   descEN:'Detects hotspots, loose connections and overloads using infrared imaging.',
+   descES:'Detecta puntos calientes, conexiones flojas y sobrecargas mediante imágenes infrarrojas.'},
+
+  {id:'wheatstone', es:'Puente de Wheatstone', en:'Wheatstone bridge', img:'https://images.tokopedia.net/img/cache/500-square/product-1/2019/12/26/16661266/16661266_bb3ced86-1585-4d83-9312-3724096f3d47_2000_2000',
+   descEN:'Precision circuit for measuring unknown resistances and small sensor variations.',
+   descES:'Circuito de precisión para medir resistencias desconocidas y pequeñas variaciones en sensores.'},
+
+  {id:'voltimetro-polarizado', es:'Voltímetro polarizado', en:'Polarized voltmeter', img:'https://i5.walmartimages.com/seo/WORGEOUS-1Pc-Analog-Voltmeter-Physics-Teaching-Instrument-Voltage-Gauge-Student-Toy_78d0d201-117f-4306-a3e3-345a7756559e.c3d599aaa2d8af020cd204252be8e040.png',
+   descEN:'Analog instrument used in labs and teaching to display DC voltage with polarity indication.',
+   descES:'Instrumento analógico usado en docencia para mostrar tensión continua con indicación de polaridad.'},
+
+  {id:'guantes', es:'Guantes dieléctricos', en:'Insulating gloves', img:'https://http2.mlstatic.com/D_NQ_NP_2X_798065-MLB28529486563_102018-F.jpg',
+   descEN:'Protect hands from electrical shock when working near energized parts.',
+   descES:'Protegen las manos frente a descargas eléctricas al trabajar cerca de partes energizadas.'},
+
+  {id:'casco', es:'Casco dieléctrico', en:'Dielectric helmet', img:'https://tienda.suramericanadeguantes.com/wp-content/uploads/2024/04/casco-blacjpg-1536x1536.jpg',
+   descEN:'Protects the head against impact and electrical hazards in industrial environments.',
+   descES:'Protege la cabeza frente a impactos y riesgos eléctricos en entornos industriales.'},
+
+  {id:'gafas', es:'Gafas de protección', en:'Safety glasses', img:'https://tse3.mm.bing.net/th/id/OIP.0f7BVCdE5w6kTV1aSeNbiAHaHa?cb=thfvnext&rs=1&pid=ImgDetMain&o=7&rm=3',
+   descEN:'Shields eyes from debris, sparks and accidental splashes during electrical work.',
+   descES:'Protegen los ojos de partículas, chispas y salpicaduras accidentales durante el trabajo eléctrico.'},
+
+  {id:'botas', es:'Botas dieléctricas', en:'Dielectric boots', img:'https://glground.co/imagenes/botasdielectricas/6_bota_dielectrica.jpg',
+   descEN:'Provide insulation and grip when working on damp floors or near conductive surfaces.',
+   descES:'Aportan aislamiento y agarre al trabajar en suelos húmedos o cerca de superficies conductoras.'},
+
+  {id:'arnes', es:'Arnés de seguridad', en:'Safety harness', img:'https://th.bing.com/th/id/R.231b6fa35114424c22f596e8ce91595d?rik=sCf8%2bn9jmVS1Jw&riu=http%3a%2f%2fwww.bradford.com.mx%2fwp-content%2fuploads%2f2018%2f09%2farnes-de-seguridad.jpg&ehk=uwFxNsUxBLm74O28DnpIzVvdrjL7%2fSb0z2n2hGh2ZlQ%3d&risl=&pid=ImgRaw&r=0',
+   descEN:'Prevents falls when working at height on poles, towers or elevated platforms.',
+   descES:'Previene caídas en trabajos en altura sobre postes, torres o plataformas elevadas.'},
+
+  {id:'cautin', es:'Cautín', en:'Soldering iron', img:'https://electronicathido.com/assets/recursosImagenes/productos/516/imagenes/cautinstren_1.jpg',
+   descEN:'Heats and melts solder to join conductors and electronic components, producing clean and durable joints.',
+   descES:'Calienta y funde estaño para unir conductores y componentes electrónicos, logrando uniones limpias y duraderas.'},
+
+  {id:'cinturon', es:'Cinturón porta-herramientas', en:'Tool belt', img:'https://toolkeeping.com/wp-content/uploads/2020/04/CLC-Custom-Leathercraft-1608-Electricians-Comfort-Lift-Combo-2048x1697.jpg',
+   descEN:'Keeps essential tools at hand safely, improving efficiency and ergonomics during field work.',
+   descES:'Mantiene las herramientas esenciales a la mano de forma segura, mejorando eficiencia y ergonomía en trabajo de campo.'},
+
+  {id:'taladro', es:'Taladro eléctrico', en:'Drill', img:'https://th.bing.com/th/id/R.f4966cd8ed2221c82237da1b344237b1?rik=fFDohiKnGDh%2fxA&pid=ImgRaw&r=0',
+   descEN:'Drills holes to mount panels, trays and equipment; supports precise installation work.',
+   descES:'Perfora superficies para fijar tableros, bandejas y equipos; facilita instalaciones precisas.'}
+];
+
+/* ---------- Helpers ---------- */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+function shuffle(arr){ return arr.slice().sort(()=>Math.random()-0.5); }
+
+/* ---------- Render guide (EN then ES, colored) ---------- */
+function renderGuide(){
+  const list = $('#guideList'); list.innerHTML = '';
+  DATA.forEach(item=>{
+    const node = document.createElement('div'); node.className = 'tool-card';
+    node.innerHTML = `
+      <div class="tool-photo"><img src="${item.img}" alt="${item.en} — ${item.es}"></div>
+      <div class="tool-body">
+        <div class="tool-title"><span style="color:var(--ink)">${item.en}</span> — <span style="color:var(--muted)">${item.es}</span></div>
+        <div class="tool-desc"><span style="color:var(--ink)">${item.descEN}</span></div>
+        <div class="tool-desc"><span style="color:var(--muted)">${item.descES}</span></div>
+      </div>`;
+    list.appendChild(node);
+  });
+}
+
+/* ---------- State & UI references ---------- */
+const btnMatch = $('#btnMatch'), btnQuiz = $('#btnQuiz');
+const site = $('#site');
+const matchPanel = $('#matchPanel'), quizPanel = $('#quizPanel');
+const imagesCol = $('#imagesCol'), namesCol = $('#namesCol'), matchCanvas = $('#matchCanvas'), matchBoard = $('#matchBoard');
+const overlay = $('#overlay'), resultCard = $('#resultCard');
+
+let currentMode = null; // 'match' or 'quiz' or null
+
+/* ---------- START / FINISH ---------- */
+function startGame(mode){
+  // hide entire site
+  site.style.display = 'none';
+  // close overlays/modals
+  hideModal(); overlay.style.display = 'none'; document.body.style.overflow = '';
+  consecutiveQuizWrong = 0;
+  if(mode === 'match'){
+    currentMode = 'match';
+    quizPanel.style.display = 'none';
+    matchPanel.style.display = 'block';
+    buildMatch();
+    window.scrollTo({top:0,behavior:'smooth'});
+  } else if(mode === 'quiz'){
+    currentMode = 'quiz';
+    matchPanel.style.display = 'none';
+    quizPanel.style.display = 'block';
+    startQuizInternal();
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+}
+function finishGame(){
+  // restore site
+  site.style.display = '';
+  currentMode = null;
+  matchPanel.style.display = 'none';
+  quizPanel.style.display = 'none';
+  hideModal();
+  overlay.style.display = 'none';
+  document.body.style.overflow = '';
+  // reset some states
+  consecutiveQuizWrong = 0;
+  matchMatched = new Set();
+}
+
+/* ---------- MATCH GAME ---------- */
+let matchSelected = null;
+let matchPairs = [];
+let matchMatched = new Set();
+let matchScore = 100;
+const MATCH_PENALTY = 20;
+const MATCH_COUNT = 15;
+
+function buildMatch(){
+  imagesCol.innerHTML = ''; namesCol.innerHTML = ''; matchPairs = []; matchMatched = new Set(); matchSelected = null; matchScore = 100;
+  $('#matchScore').textContent = 'Score: ' + matchScore;
+
+  const sample = shuffle(DATA).slice(0, Math.min(MATCH_COUNT, DATA.length));
+  const left = shuffle(sample);
+  const right = shuffle(sample.slice());
+
+  left.forEach(it=>{
+    const d = document.createElement('div'); d.className='img-card'; d.dataset.id = it.id; d.dataset.answer = it.en;
+    d.innerHTML = `<img src="${it.img}" alt="${it.en}">`;
+    d.addEventListener('click', ()=>matchClick(d));
+    imagesCol.appendChild(d);
+  });
+  right.forEach(it=>{
+    const d = document.createElement('div'); d.className='name-card'; d.dataset.id = it.id; d.dataset.answer = it.en;
+    d.textContent = it.en;
+    d.addEventListener('click', ()=>matchClick(d));
+    namesCol.appendChild(d);
+  });
+  requestAnimationFrame(resizeCanvas);
+}
+
+function matchClick(el){
+  if(el.classList.contains('paired')) return;
+  const side = el.classList.contains('img-card') ? 'img' : 'name';
+  const id = el.dataset.id;
+
+  if(!matchSelected){
+    matchSelected = {el,side,id}; el.classList.add('selected'); return;
+  }
+
+  if(matchSelected.el === el){
+    el.classList.remove('selected'); matchSelected = null; return;
+  }
+
+  if(matchSelected.side === side){
+    matchSelected.el.classList.remove('selected');
+    matchSelected = {el,side,id}; el.classList.add('selected'); return;
+  }
+
+  const first = matchSelected;
+  const second = {el,side,id};
+
+  if(first.id === second.id){
+    // correct
+    first.el.classList.remove('selected'); first.el.classList.add('paired'); second.el.classList.add('paired');
+    first.el.style.borderColor = 'var(--success)'; second.el.style.borderColor = 'var(--success)';
+    matchPairs.push({imgId: first.side==='img'?first.id:second.id, nameId: first.side==='name'?first.id:second.id});
+    matchMatched.add(first.id);
+    drawMatchLines();
+    matchSelected = null;
+    // reset consecutive wrong **only in quiz**, so no action here
+    // completion
+    if(matchMatched.size === document.querySelectorAll('#imagesCol .img-card').length){
+      showResultOverlay(matchScore); // percent = matchScore
+    }
+  } else {
+    // wrong
+    first.el.classList.add('wrong'); second.el.classList.add('wrong');
+    matchScore = Math.max(0, matchScore - MATCH_PENALTY);
+    $('#matchScore').textContent = 'Score: ' + matchScore;
+    setTimeout(()=>{
+      first.el.classList.remove('wrong','selected'); second.el.classList.remove('wrong');
+      first.el.style.borderColor = ''; second.el.style.borderColor = '';
+      matchSelected = null;
+    },900);
+    if(matchScore <= 0){
+      showResultOverlay(0);
+    }
+  }
+}
+
+/* Canvas drawing for match lines */
+function resizeCanvas(){
+  if(!matchBoard) return;
+  const rect = matchBoard.getBoundingClientRect();
+  matchCanvas.width = Math.max(600, Math.round(rect.width));
+  matchCanvas.height = Math.max(320, Math.round(rect.height));
+  matchCanvas.style.left='0px'; matchCanvas.style.top='0px';
+  drawMatchLines();
+}
+function drawMatchLines(){
+  if(!matchCanvas.getContext) return;
+  const ctx = matchCanvas.getContext('2d'); ctx.clearRect(0,0,matchCanvas.width,matchCanvas.height);
+  const boardRect = matchBoard.getBoundingClientRect();
+  matchPairs.forEach(p=>{
+    const imgEl = document.querySelector(`.img-card[data-id="${p.imgId}"]`);
+    const nameEl = document.querySelector(`.name-card[data-id="${p.nameId}"]`);
+    if(!imgEl || !nameEl) return;
+    const r1 = imgEl.getBoundingClientRect(), r2 = nameEl.getBoundingClientRect();
+    const sx = r1.right - boardRect.left, sy = r1.top + r1.height/2 - boardRect.top;
+    const ex = r2.left - boardRect.left, ey = r2.top + r2.height/2 - boardRect.top;
+    ctx.beginPath(); ctx.moveTo(sx,sy); const mx = (sx+ex)/2; ctx.bezierCurveTo(mx,sy,mx,ey,ex,ey);
+    ctx.lineWidth = 3.5; ctx.strokeStyle = '#bfe7ff'; ctx.lineCap = 'round'; ctx.stroke();
+    ctx.beginPath(); ctx.fillStyle = '#bfe7ff'; ctx.arc(sx,sy,5,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.fillStyle = '#bfe7d6'; ctx.arc(ex,ey,5,0,Math.PI*2); ctx.fill();
+  });
+}
+
+/* ---------- QUIZ ---------- */
+const quizArea = $('#quizArea');
+let quizOrder = [], quizIndex=0, quizScore=0;
+const QUIZ_COUNT = 15;
+let consecutiveQuizWrong = 0;
+
+function startQuizInternal(){
+  // prepares and runs quiz; startGame('quiz') already showed panel
+  quizOrder = shuffle(DATA.slice()).slice(0, Math.min(QUIZ_COUNT, DATA.length));
+  quizIndex = 0; quizScore = 0; consecutiveQuizWrong = 0;
+  renderQuizQuestion();
+}
+
+function renderQuizQuestion(){
+  quizArea.innerHTML = '';
+  if(quizIndex >= quizOrder.length){
+    const percent = Math.round((quizScore/quizOrder.length)*100);
+    showResultOverlay(percent);
+    return;
+  }
+  const item = quizOrder[quizIndex];
+
+  // options: correct + 3 distractors
+  const distractors = shuffle(DATA.filter(d=>d.id !== item.id)).slice(0,3).map(d=>d.en);
+  const options = shuffle([item.en, ...distractors]);
+
+  const card = document.createElement('div'); card.style.display='flex'; card.style.flexDirection='column'; card.style.alignItems='center';
+  const qTitle = document.createElement('div'); qTitle.style.fontWeight='800'; qTitle.style.marginBottom='8px'; qTitle.style.color='var(--ink)';
+  qTitle.textContent = `Question ${quizIndex+1} / ${quizOrder.length}: Which tool is shown?`;
+
+  const img = document.createElement('img'); img.src = item.img; img.alt = item.en; img.className = 'quiz-img';
+
+  const optsDiv = document.createElement('div'); optsDiv.className = 'options';
+  options.forEach((opt, i)=>{
+    const btn = document.createElement('button'); btn.className = 'option-btn'; btn.innerText = `${String.fromCharCode(65+i)}) ${opt}`;
+    btn.addEventListener('click', ()=>{
+      if(btn.dataset.locked) return; btn.dataset.locked = '1';
+      if(opt === item.en){
+        btn.classList.add('correct'); quizScore++; consecutiveQuizWrong = 0;
+      } else {
+        btn.classList.add('wrong'); consecutiveQuizWrong++;
+        if(consecutiveQuizWrong >= 3){ showModal(); consecutiveQuizWrong = 0; }
+      }
+      setTimeout(()=>{ quizIndex++; renderQuizQuestion(); }, 700);
+    });
+    optsDiv.appendChild(btn);
+  });
+
+  card.appendChild(qTitle); card.appendChild(img); card.appendChild(optsDiv);
+  quizArea.appendChild(card);
+}
+
+/* ---------- MODAL (3 consecutive wrongs) ---------- */
+function showModal(){
+  const modal = document.getElementById('threeErrorsModal');
+  modal.style.display = 'block';
+  modal.setAttribute('aria-hidden','false');
+}
+function hideModal(){
+  const modal = document.getElementById('threeErrorsModal');
+  modal.style.display = 'none';
+  modal.setAttribute('aria-hidden','true');
+}
+function ignoreModal(){ hideModal(); }
+function finishFromModal(){ hideModal(); finishGame(); }
+
+/* ---------- RESULT OVERLAY ---------- */
+function showResultOverlay(percent){
+  const title = $('#resultTitle'), sub = $('#resultSub'), scoreEl = $('#resultScore');
+  let cls='lose', titleText='', subText='';
+  if(percent === 100){
+    cls='win'; titleText='🎉 Perfect!'; subText='You answered everything correctly.';
+  } else if(percent >= 70){
+    cls='ok'; titleText='✅ Passed'; subText='Good job — try again to improve.';
+  } else if(percent <= 0){
+    cls='lose'; titleText='❌ Game over'; subText='Your score reached 0 points.';
+  } else {
+    cls='lose'; titleText='❌ Try again'; subText='Review the guide and play again.';
+  }
+  resultCard.className = 'result-card ' + cls;
+  title.textContent = titleText; sub.textContent = subText; scoreEl.textContent = `Score: ${Math.max(0, percent)}%`;
+  overlay.style.display = 'flex'; document.body.style.overflow = 'hidden';
+}
+
+/* overlay buttons */
+$('#btnRetry').addEventListener('click', ()=>{
+  overlay.style.display = 'none'; document.body.style.overflow = '';
+  hideModal();
+  if(currentMode === 'quiz'){ startQuizInternal(); }
+  else if(currentMode === 'match'){ buildMatch(); }
+});
+$('#btnClose').addEventListener('click', ()=>{
+  overlay.style.display = 'none'; document.body.style.overflow = '';
+  finishGame();
+});
+
+/* ---------- Wiring ---------- */
+$('#btnMatch').addEventListener('click', ()=> startGame('match'));
+$('#btnQuiz').addEventListener('click', ()=> startGame('quiz'));
+
+window.addEventListener('resize', resizeCanvas);
+
+/* ---------- Init ---------- */
+renderGuide();
+resizeCanvas();
+
+</script>
+</body>
+</html>
