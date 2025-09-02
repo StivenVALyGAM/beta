@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Industrial Electricity (Bilingual Learning)</title>
+<title> Website with interactive tools for learning </title>
 <style>
   :root{
     --bg:#ffffff;
@@ -133,7 +133,7 @@
   <div id="site">
     <div class="wrap">
       <header>
-        <h1>Industrial Electricity</h1>
+        <h1> Website with interactive tools for learning </h1>
         <p class="subtitle">A bilingual learning resource created as part of an English project.</p>
       </header>
 
@@ -144,7 +144,7 @@
       </section>
 
       <section class="card" id="guide-card">
-        <h3 style="margin-top:0;color:var(--ink)">Learning Guide — Tools & PPE</h3>
+        <h3 style="margin-top:0;color:var(--ink)">Learning Guide — Guia de Aprendizaje </h3>
         <div id="guideList" class="guide"></div>
       </section>
 
@@ -209,7 +209,7 @@
   </div>
 
 <script>
-/* ================= DATASET (pipe wrench removed; includes cautin, tool belt, drill) */
+
 const DATA = [
   {id:'multimetro', es:'Multímetro', en:'Multimeter', img:'https://th.bing.com/th/id/R.09477a7f9eb3a07a4c9b8473c6b1c062?rik=iMXLxGwKkE%2fjGQ&riu=http%3a%2f%2foksecurity.hn%2fwp-content%2fuploads%2f2023%2f05%2fUT139C-multimetro_.jpg&ehk=CiH3LFjJlLZnqzQQ9k9Z9aPAGUxOVqiQ6H9p0XKxLCc%3d&risl=&pid=ImgRaw&r=0',
    descEN:'Measures voltage, current and resistance; essential for basic troubleshooting, verification and safety checks before energizing equipment.',
@@ -358,7 +358,7 @@ const overlay = $('#overlay'), resultCard = $('#resultCard');
 
 let currentMode = null; // 'match' or 'quiz' or null
 
-/* ---------- START / FINISH ---------- */
+/* START / FINISH */
 function startGame(mode){
   // hide entire site
   site.style.display = 'none';
